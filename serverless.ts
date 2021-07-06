@@ -19,8 +19,12 @@ const serverlessConfiguration: AWS = {
         },
         environment: {
             AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1",
+            DYNAMO_TABLE: "fashog2",
         },
         lambdaHashingVersion: "20201221",
+    },
+    package: {
+        individually: true,
     },
     // import the function via paths
     functions: {
@@ -34,21 +38,18 @@ const serverlessConfiguration: AWS = {
                     http: {
                         method: "post",
                         path: "api",
-                        // cors: {
-                        //     headers: [
-                        //         "Cookies",
-                        //         "Content-Type",
-                        //         "X-Amz-Date",
-                        //         "Authorization",
-                        //         "X-Api-Key",
-                        //         "X-Amz-Security-Token",
-                        //         "X-Amz-User-Agent",
-                        //         "X-Signature-Ed25519",
-                        //         "X-Signature-Timestamp",
-                        //     ],
-                        //     allowCredentials: true,
-                        // },
                     },
+                },
+            ],
+        },
+        cleanup: {
+            handler: "functions/cleanup/handler.cleanup",
+            package: {
+                individually: true,
+            },
+            events: [
+                {
+                    schedule: "cron(0 15 ? * 3 *)",
                 },
             ],
         },

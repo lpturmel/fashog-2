@@ -1,6 +1,23 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import { verifyKey } from "discord-interactions";
+import { DynamoDB } from "aws-sdk";
+import { addKey, formatKeyChoices, listKeys } from "./db";
 
+const DDB = new DynamoDB.DocumentClient({
+    apiVersion: "2012-08-10",
+    region: process.env.AWS_REGION,
+});
+/**
+ *
+ * DOC
+ *
+ * COMMAND    ID
+ * ping:      861755492325654548
+ * xaviotron: 861798491814363176
+ * fashog:    861798627503505428
+ * addkey:    861804004195172372
+ * keys:      861797525829058611
+ */
 export const root: APIGatewayProxyHandler = async (event) => {
     const requiredHeaders = {
         "Content-Type": "application/json",
@@ -62,23 +79,111 @@ export const root: APIGatewayProxyHandler = async (event) => {
                 }),
             };
         } else {
-            return {
-                statusCode: 200,
-                headers: {
-                    ...requiredHeaders,
-                },
-                body: JSON.stringify({
-                    type: 4,
-                    data: {
-                        tts: false,
-                        content: "Pong 🏓",
-                        embeds: [],
-                        allowed_mentions: { parse: [] },
+            const interactionId = body.data.id;
+            const args = body.data.options;
+
+            if (interactionId === "861755492325654548") {
+                return {
+                    statusCode: 200,
+                    headers: {
+                        ...requiredHeaders,
                     },
-                }),
-            };
+                    body: JSON.stringify({
+                        type: 4,
+                        data: {
+                            tts: false,
+                            content: "Pong 🏓",
+                            embeds: [],
+                            allowed_mentions: { parse: [] },
+                        },
+                    }),
+                };
+            }
+            if (interactionId === "861798491814363176") {
+                return {
+                    statusCode: 200,
+                    headers: {
+                        ...requiredHeaders,
+                    },
+                    body: JSON.stringify({
+                        type: 4,
+                        data: {
+                            tts: false,
+                            content:
+                                "🤡🤡🤡 Je db je db!!!! .... ah je lai pas. Oubliez pas de cliquer lala",
+                            embeds: [],
+                            allowed_mentions: { parse: [] },
+                        },
+                    }),
+                };
+            }
+            if (interactionId === "861798627503505428") {
+                return {
+                    statusCode: 200,
+                    headers: {
+                        ...requiredHeaders,
+                    },
+                    body: JSON.stringify({
+                        type: 4,
+                        data: {
+                            tts: false,
+                            content: "👹 Macaque en chef",
+                            embeds: [],
+                            allowed_mentions: { parse: [] },
+                        },
+                    }),
+                };
+            }
+            if (interactionId === "861804004195172372") {
+                await addKey(
+                    {
+                        addedBy: body.member.user.username.toLowerCase(),
+                        name: args[0].value,
+                        level: args[1].value,
+                    },
+                    DDB
+                );
+                return {
+                    statusCode: 200,
+                    headers: {
+                        ...requiredHeaders,
+                    },
+                    body: JSON.stringify({
+                        type: 4,
+                        data: {
+                            tts: false,
+                            content: "✅ La key a été ajoutée à la liste",
+                            embeds: [],
+                            allowed_mentions: { parse: [] },
+                        },
+                    }),
+                };
+            }
+            if (interactionId === "861797525829058611") {
+                const keys = await listKeys(
+                    args ? args[0].value : undefined,
+                    DDB
+                );
+                const formattedKeys = formatKeyChoices(keys);
+                return {
+                    statusCode: 200,
+                    headers: {
+                        ...requiredHeaders,
+                    },
+                    body: JSON.stringify({
+                        type: 4,
+                        data: {
+                            tts: false,
+                            content: formattedKeys,
+                            embeds: [],
+                            allowed_mentions: { parse: [] },
+                        },
+                    }),
+                };
+            }
         }
     } catch (err) {
+        console.log(err);
         return {
             statusCode: 500,
             headers: {

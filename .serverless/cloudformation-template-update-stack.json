@@ -77,6 +77,12 @@
         "LogGroupName": "/aws/lambda/fashog-2-prod-root"
       }
     },
+    "CleanupLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/fashog-2-prod-cleanup"
+      }
+    },
     "IamRoleLambdaExecution": {
       "Type": "AWS::IAM::Role",
       "Properties": {
@@ -161,7 +167,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-          "S3Key": "serverless/fashog-2/prod/1625532777394-2021-07-06T00:52:57.394Z/fashog-2.zip"
+          "S3Key": "serverless/fashog-2/prod/1625544017592-2021-07-06T04:00:17.592Z/root.zip"
         },
         "Handler": "functions/root/handler.root",
         "Runtime": "nodejs14.x",
@@ -170,7 +176,8 @@
         "Timeout": 6,
         "Environment": {
           "Variables": {
-            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1"
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
+            "DYNAMO_TABLE": "fashog2"
           }
         },
         "Role": {
@@ -184,14 +191,92 @@
         "RootLogGroup"
       ]
     },
-    "RootLambdaVersionDnZu78YgTrGtd2jImzIlejkWjezSOwAUNRihBtUUV0": {
+    "CleanupLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/fashog-2/prod/1625544017592-2021-07-06T04:00:17.592Z/cleanup.zip"
+        },
+        "Handler": "functions/cleanup/handler.cleanup",
+        "Runtime": "nodejs14.x",
+        "FunctionName": "fashog-2-prod-cleanup",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "AWS_NODEJS_CONNECTION_REUSE_ENABLED": "1",
+            "DYNAMO_TABLE": "fashog2"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "CleanupLogGroup"
+      ]
+    },
+    "CleanupLambdaVersionHAz6q6Krfttgykt4qlQTZz1xOGIQvh3yLp7e4mi0": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "CleanupLambdaFunction"
+        },
+        "CodeSha256": "XeLwB5urE4tp0+zrnTegYo1rBp8XWC9b3mdJXDzveW0="
+      }
+    },
+    "RootLambdaVersionHTdyRFOCryQQbXgphGsIA5brWTtegc9nQU3FFqQaphA": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "RootLambdaFunction"
         },
-        "CodeSha256": "FK1o56N/pxxvXHG2dygtF63Q9xclRAqGPYRcsCLTHlA="
+        "CodeSha256": "ChdzUWt4IKJzsOnStpIxrVcReaFOb/kunO6tlB7qAHQ="
+      }
+    },
+    "CleanupEventsRuleSchedule1": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "cron(0 15 ? * 3 *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "CleanupLambdaFunction",
+                "Arn"
+              ]
+            },
+            "Id": "cleanupSchedule"
+          }
+        ]
+      }
+    },
+    "CleanupLambdaPermissionEventsRuleSchedule1": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "CleanupLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CleanupEventsRuleSchedule1",
+            "Arn"
+          ]
+        }
       }
     },
     "ApiGatewayRestApi": {
@@ -268,7 +353,7 @@
         "RootLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1625532774507": {
+    "ApiGatewayDeployment1625544014624": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -327,10 +412,19 @@
         "Name": "sls-fashog-2-prod-ServerlessDeploymentBucketName"
       }
     },
+    "CleanupLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "CleanupLambdaVersionHAz6q6Krfttgykt4qlQTZz1xOGIQvh3yLp7e4mi0"
+      },
+      "Export": {
+        "Name": "sls-fashog-2-prod-CleanupLambdaFunctionQualifiedArn"
+      }
+    },
     "RootLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-        "Ref": "RootLambdaVersionDnZu78YgTrGtd2jImzIlejkWjezSOwAUNRihBtUUV0"
+        "Ref": "RootLambdaVersionHTdyRFOCryQQbXgphGsIA5brWTtegc9nQU3FFqQaphA"
       },
       "Export": {
         "Name": "sls-fashog-2-prod-RootLambdaFunctionQualifiedArn"
